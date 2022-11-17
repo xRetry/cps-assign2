@@ -5,6 +5,12 @@ except ModuleNotFoundError:
     import numpy as np
 from pybricks.ev3devices import Motor
 from pybricks.parameters import Port
+from pybricks.tools import wait
+
+
+def get_error(x_old: np.ndarray, x_des: np.ndarray, x_cur: np.ndarray) -> float:
+    # TODO: Implement function
+    return 0.
 
 
 def kin_forward(l, q):
@@ -38,14 +44,25 @@ class TwoLinkArm:
     l: np.ndarray
     motors: list
     motor_speed: float
+    x_des_old: np.ndarray
+    dist_threshold: float
+    error: float
+    num_error: int
 
     def __init__(self):
-        self.l = np.array([0.75, 1])
+        self.l = np.array([0.75, 1]) 
         self.motor_speed = 100
         self.motors = [
             Motor(Port.A),
             Motor(Port.B)
         ]
+        self.dist_threshold = 0.1  
+        self.x_des_old = kin_forward(self.l, self._get_angles())
+        self.error, self.num_error = 0., 0
+
+    def follow_path(self, path: np.ndarray, method: str):
+        for x_des in path:
+            self.to_coordinate(x_des, method)
 
     def to_coordinate(self, x_des: np.ndarray, method: str):
         if method == "inverse":
@@ -66,12 +83,14 @@ class TwoLinkArm:
             q[0] -= np.pi
 
         self._set_angles(q)
+        self._wait_till_target(x_des)
+        self.x_des_old = x_des
 
     def _to_coordinate_jacobian(self, x_des, num_iter):
         step_size = 0.01
         l = self.l
         for i in range(num_iter):
-            q = np.array([math.radians(motor.angle()) for motor in self.motors])
+            q = self._get_angles()
             x_cur = kin_forward(l, q)[:, 2]
             inv_jacobian = np.linalg.pinv(kin_jacobian(l, q)) # TODO: pinv maybe not available in ulab
             delta_q = inv_jacobian @ (x_des - x_cur)[:, None]
@@ -82,8 +101,25 @@ class TwoLinkArm:
                 q[1] = 1e-3
 
             self._set_angles(q)
+            self._wait_till_target(kin_forward(q))
 
     def _set_angles(self, rad):
         for i in range(2):
             self.motors[i].run_target(self.motor_speed, math.degrees(rad[i]))
-        # TODO: Maybe add pause?
+
+    def _get_angles(self):
+        return np.array([math.radians(motor.angle()) for motor in self.motors])
+
+    def _wait_till_target(self, x_des):
+        time_sample = 10 # ms
+        x_cur = kin_forward(self.l, self._get_angles())[:, 2]
+        while np.linalg.norm(x_cur - x_des) > self.dist_threshold:
+            # Compute normal distance to connection line as error
+            error = get_error(self.x_des_old, x_des, x_cur) # TODO: Create function
+            self.num_error += 1
+            self.error = self.error * (self.num_error-1) / self.num_error + error / self.num_error
+
+            wait(time_sample) 
+            x_cur = kin_forward(self.l, self._get_angles())[:, 2]
+            
+
