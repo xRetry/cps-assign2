@@ -3,6 +3,7 @@ try:
     from ulab import numpy as np
 except ModuleNotFoundError:
     import numpy as np
+from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import Motor
 from pybricks.parameters import Port
 from pybricks.tools import wait, StopWatch, DataLog
@@ -42,6 +43,7 @@ def kin_jacobian(l, q):
 
 class TwoLinkArm:
     l: np.ndarray
+    ev3: EV3Brick
     motors: list
     motor_speed: float
     x_des_old: np.ndarray
@@ -51,6 +53,7 @@ class TwoLinkArm:
 
 
     def __init__(self):
+        self.ev3 = EV3Brick()
         self.l = np.array([0.75, 1]) 
         self.motor_speed = 100
         self.motors = [
@@ -60,6 +63,21 @@ class TwoLinkArm:
         self.dist_threshold = 0.1  
         self.x_des_old = kin_forward(self.l, self._get_angles())[:, 2]
         self.error, self.num_error = 0., 0
+
+
+    def measure_coordinates(self):
+        while True:
+            # Should print the coodinates and angles if any button is pressed
+            if len(self.ev3.buttons.pressed()) > 0:
+                q = self._get_angles()
+                xy = kin_forward(self.l, q)[:, 2]
+
+                self.ev3.screen.clear()
+                self.ev3.screen.print("q1: ", math.degrees(q[0]))
+                self.ev3.screen.print("q2: ", math.degrees(q[1]))
+                self.ev3.screen.print("x: ", xy[0])
+                self.ev3.screen.print("y: ", xy[1])
+            wait(50)
 
 
     def follow_path(self, path: np.ndarray, method: str):

@@ -7,10 +7,13 @@ except ModuleNotFoundError:
 from two_link_arm import TwoLinkArm
 from path_creation import path_line, path_spiral
 
+
 path = path_line(200)
 path = path_spiral(300)
-
 arm = TwoLinkArm()
+
+arm.measure_coordinates()
+
 arm.follow_path(path, "jacobian")
 arm.follow_path(path, "inverse")
 #arm.to_coordinate(np.array([0, 0]), "inverse")
