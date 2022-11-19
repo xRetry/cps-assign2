@@ -5,7 +5,7 @@ except ModuleNotFoundError:
     import numpy as np
 from pybricks.ev3devices import Motor
 from pybricks.parameters import Port
-from pybricks.tools import wait
+from pybricks.tools import wait, StopWatch, DataLog
 
 
 def get_error(x_old: np.ndarray, x_des: np.ndarray, x_cur: np.ndarray) -> float:
@@ -49,6 +49,7 @@ class TwoLinkArm:
     error: float
     num_error: int
 
+
     def __init__(self):
         self.l = np.array([0.75, 1]) 
         self.motor_speed = 100
@@ -57,20 +58,28 @@ class TwoLinkArm:
             Motor(Port.B)
         ]
         self.dist_threshold = 0.1  
-        self.x_des_old = kin_forward(self.l, self._get_angles())
+        self.x_des_old = kin_forward(self.l, self._get_angles())[:, 2]
         self.error, self.num_error = 0., 0
 
+
     def follow_path(self, path: np.ndarray, method: str):
+        watch = StopWatch()
         for x_des in path:
             self.to_coordinate(x_des, method)
+        duration = watch.time()
+
+        log = DataLog("error", "duration")
+        log.log(self.error, duration)
+
 
     def to_coordinate(self, x_des: np.ndarray, method: str):
         if method == "inverse":
             q = self._to_coordinate_analytic(x_des)
         elif method == "jacobian":
-            q = self._to_coordinate_jacobian(x_des, 500)
+            q = self._to_coordinate_jacobian(x_des, 50)
         else: 
             raise KeyError("Invalid method specification! Use 'inverse' or 'jacobian'")
+
     
     def _to_coordinate_analytic(self, x_des):
         l = self.l
@@ -85,6 +94,7 @@ class TwoLinkArm:
         self._set_angles(q)
         self._wait_till_target(x_des)
         self.x_des_old = x_des
+
 
     def _to_coordinate_jacobian(self, x_des, num_iter):
         step_size = 0.01
@@ -101,14 +111,17 @@ class TwoLinkArm:
                 q[1] = 1e-3
 
             self._set_angles(q)
-            self._wait_till_target(kin_forward(q))
+            self._wait_till_target(kin_forward(self.l, q)[:, 2])
+
 
     def _set_angles(self, rad):
         for i in range(2):
             self.motors[i].run_target(self.motor_speed, math.degrees(rad[i]))
 
+
     def _get_angles(self):
         return np.array([math.radians(motor.angle()) for motor in self.motors])
+
 
     def _wait_till_target(self, x_des):
         time_sample = 10 # ms
