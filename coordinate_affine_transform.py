@@ -56,3 +56,20 @@ def scale(*scaling):
 
 def find_mp(a,c):
     return tuple((c-a)/2)
+
+def test():
+
+    a = np.array([0,0])
+    c = np.array([297,210])
+
+    pm = tuple((c-a)/2)
+
+    p1 = (-10,25,1)
+    p2 = (10,25,1)
+    p3 = (10,66,1)
+    p4 = (-10,66,1)
+    
+    print("p1tr =", tuple(np.sum(rotation(30,pm) @ p1 * translation(pm[0],pm[1]), axis=1)))
+    print("p2tr =", tuple(np.sum(rotation(30,pm) @ p2 * translation(pm[0],pm[1]), axis=1)))
+    print("p3tr =", tuple(np.sum(rotation(30,pm) @ p3 * translation(pm[0],pm[1]), axis =1)))
+    print("p4tr =", tuple(np.sum(rotation(30,pm) @ p4 * translation(pm[0],pm[1]), axis=1)))
