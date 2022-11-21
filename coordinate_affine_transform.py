@@ -73,3 +73,27 @@ def test():
     print("p2tr =", tuple(np.sum(rotation(30,pm) @ p2 * translation(pm[0],pm[1]), axis=1)))
     print("p3tr =", tuple(np.sum(rotation(30,pm) @ p3 * translation(pm[0],pm[1]), axis =1)))
     print("p4tr =", tuple(np.sum(rotation(30,pm) @ p4 * translation(pm[0],pm[1]), axis=1)))
+
+
+def transform_coordinates(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
+    '''
+    Transforms all coordinates in path base on refs.
+
+    Parameters
+    ----------
+    refs: ndarray, shape (3, 2)
+        A numpy array containing 3 corner points of the working space as reference.
+        Point 1: lower right corner 
+        Point 2: lower left corner 
+        Point 3: top left corner
+    path: ndarray, shape (number of path points, 2)
+        A list of xy coordinates (shape: ).
+        All points in the path are transformed based on refs.
+
+    Returns
+    -------
+    path_trans: ndarray, shape (number of path points, 2)
+        The transformed path, with all path points inside the rectangular area spanned by the reference points.
+    '''
+    # TODO: Add function body
+    return np.zeros_like(path)
