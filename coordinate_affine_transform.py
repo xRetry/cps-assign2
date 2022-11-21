@@ -75,9 +75,9 @@ def test():
     print("p4tr =", tuple(np.sum(rotation(30,pm) @ p4 * translation(pm[0],pm[1]), axis=1)))
 
 
-def transform_coordinates(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
+def transform_coordinates2(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
     '''
-    Transforms all coordinates in path base on refs.
+    Transforms all coordinates in path based on refs.
 
     Parameters
     ----------
@@ -87,7 +87,7 @@ def transform_coordinates(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
         Point 2: lower left corner 
         Point 3: top left corner
     path: ndarray, shape (number of path points, 2)
-        A list of xy coordinates (shape: ).
+        A list of xy coordinates.
         All points in the path are transformed based on refs.
 
     Returns
@@ -97,3 +97,57 @@ def transform_coordinates(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
     '''
     # TODO: Add function body
     return np.zeros_like(path)
+
+
+def transform_coordinates(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
+    '''
+    Transforms all coordinates in path based on refs.
+
+    Parameters
+    ----------
+    refs: ndarray, shape (3, 2)
+        A numpy array containing 3 corner points of the working space as reference.
+        Point 1: lower right corner 
+        Point 2: lower left corner 
+        Point 3: top left corner
+    path: ndarray, shape (number of path points, 2)
+        A list of xy coordinates.
+        All points in the path are transformed based on refs.
+
+    Returns
+    -------
+    path_trans: ndarray, shape (number of path points, 2)
+        The transformed path, with all path points inside the rectangular area spanned by the reference points.
+    '''
+    # Copy path
+    path = np.array(path)
+
+    # Compute basis vectors
+    v1 = refs[0] - refs[1]
+    v2 = refs[2] - refs[1]
+    width_refs = np.linalg.norm(v1)
+    height_refs = np.linalg.norm(v2) 
+    v1 = v1 / width_refs
+    v2 = v2 / height_refs
+
+    # Compute path sizes
+    width_path = path[:, 0].max() - path[:, 0].min()
+    height_path = path[:, 1].max() - path[:, 1].min()
+    # Compute scaling factors
+    scale_width = width_refs / width_path 
+    scale_height = height_refs / height_path
+    # Scale and shift path to be in first quadrant
+    path[:, 0] -= path[:, 0].min() - scale_width*0.2
+    path[:, 1] -= path[:, 1].min() - scale_height*0.2
+    path[:, 0] *= scale_width*0.8
+    path[:, 1] *= scale_height*0.8
+
+    # Transform path to new coordinates
+    mat_trans = np.array([
+        [v1[0], v2[0], refs[1][0]],
+        [v1[1], v2[1], refs[1][1]],
+        [0, 0, 1]
+    ])
+    path_padded = np.hstack([path, np.ones(len(path))[:, None]])
+    path_trans_padded = mat_trans @ path_padded.T
+    return path_trans_padded[:2, :].T
