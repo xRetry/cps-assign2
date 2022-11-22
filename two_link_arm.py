@@ -59,6 +59,7 @@ class TwoLinkArm:
         self.dist_threshold = 0.1  
         self.x_des_old = kin_forward(self.l, self._get_angles())[:, 2]
         self.error, self.num_error = 0., 0
+        self.x_cur_ALL = []
 
 
     def measure_coordinates(self):
@@ -126,11 +127,16 @@ class TwoLinkArm:
 
             self._set_angles(q)
             self._wait_till_target(kin_forward(self.l, q)[:, 2])
+        self.x_des_old = x_des
 
 
     def _set_angles(self, rad):
         for i in range(2):
-            self.motors[i].run_target(self.motor_speed, math.degrees(rad[i]))
+            self.motors[i].run_target(
+                speed=self.motor_speed, 
+                target_angle=math.degrees(rad[i]),
+                wait=False # Otherwise this would pause the program
+            )
 
 
     def _get_angles(self):
@@ -145,7 +151,7 @@ class TwoLinkArm:
             [ ERROR DERIVATION ] [ VARIANT 1]
             '''
 
-            error = get_error(self.x_des_old, x_des, x_cur, 1)
+            error = self._get_error(self.x_des_old, x_des, x_cur, 1)
             self.num_error += 1
             self.error = self.error * (self.num_error-1) / self.num_error + error / self.num_error            
 
@@ -159,47 +165,48 @@ class TwoLinkArm:
             wait(time_sample) 
             x_cur = kin_forward(self.l, self._get_angles())[:, 2]
 
-        def get_error(x_old: np.ndarray, x_des: np.ndarray, x_cur: np.ndarray, variant: int) -> float:
-            error = 0.0
-            if(variant==1):
-                '''
-                [ VARIANT 1 ] Calculates the measured absolute distance between mid-point of x_old <-> x_des AND x_cur in coordinate Format
-                Thought about using orthogonal vectors, but we still assume x/y ranges to be in reasonable space (x_cur) between x_old and x_dest
-                Let's see how relative distance from point performs. If bad, i would straight advise to go for regression analysis in time-series manner.
-                '''
-                x_mid = (x_old[0] + x_des[0])/2
-                y_mid = (x_old[1] + x_des[1])/2
-                midpoint = np.array([[x_mid,y_mid]])
 
-                error = math.dist(x_cur,midpoint)
-                
-            if(variant==2):
-                '''
-                [ VARIANT 2 ] Classic line regression analysis (area under-/over between x_curr, x_des)
-                '''
-                y_cur = []
-                for coordinate in self.x_cur_ALL:
-                    y_cur.append(coordinate[1])
-                
-                y_dest = []
-                for coordinate in x_dest:
-                    y_dest.append(coordinate[1])
-                
-                
-                '''
-                Raw Error | Absolute Error | Relative Error | Percentage Error | Mean Absolute Error | Mean Squared Error (MSE) | Root Mean Squared Error (RMSE)
-                '''
-                error_raw = y_cur - y_dest
-                error_abs = np.abs(y_cur - y_dest)
-                error_rel = np.divide(np.abs(y_cur - y_dest), y_cur)
-                error_perc = error_rel * 100
-                error_MAE = np.mean(np.abs(y_cur-y_dest))
-                error_MSE = np.mean(np.square(y_cur-y_dest))
-                error_RMSE = np.root(error_MSE)
-                
-                ## --> print values then or write to file. @ Marco -- did you find a filewriter ? or should we use the logger from ev3 for that purpose ?
+    def _get_error(self, x_old: np.ndarray, x_des: np.ndarray, x_cur: np.ndarray, variant: int) -> float:
+        error = 0.0
+        if(variant==1):
+            '''
+            [ VARIANT 1 ] Calculates the measured absolute distance between mid-point of x_old <-> x_des AND x_cur in coordinate Format
+            Thought about using orthogonal vectors, but we still assume x/y ranges to be in reasonable space (x_cur) between x_old and x_dest
+            Let's see how relative distance from point performs. If bad, i would straight advise to go for regression analysis in time-series manner.
+            '''
+            x_mid = (x_old[0] + x_des[0])/2
+            y_mid = (x_old[1] + x_des[1])/2
+            midpoint = np.array([[x_mid,y_mid]])
+
+            error = math.dist(x_cur,midpoint)
+            
+        if(variant==2):
+            '''
+            [ VARIANT 2 ] Classic line regression analysis (area under-/over between x_curr, x_des)
+            '''
+            y_cur = []
+            for coordinate in self.x_cur_ALL:
+                y_cur.append(coordinate[1])
+            
+            y_dest = []
+            for coordinate in x_dest:
+                y_dest.append(coordinate[1])
+            
+            
+            '''
+            Raw Error | Absolute Error | Relative Error | Percentage Error | Mean Absolute Error | Mean Squared Error (MSE) | Root Mean Squared Error (RMSE)
+            '''
+            error_raw = y_cur - y_dest
+            error_abs = np.abs(y_cur - y_dest)
+            error_rel = np.divide(np.abs(y_cur - y_dest), y_cur)
+            error_perc = error_rel * 100
+            error_MAE = np.mean(np.abs(y_cur-y_dest))
+            error_MSE = np.mean(np.square(y_cur-y_dest))
+            error_RMSE = np.root(error_MSE)
+            
+            ## --> print values then or write to file. @ Marco -- did you find a filewriter ? or should we use the logger from ev3 for that purpose ?
 
 
-            return error
+        return error
             
 
