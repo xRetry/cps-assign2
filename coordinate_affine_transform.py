@@ -137,10 +137,10 @@ def transform_coordinates(refs: np.ndarray, path: np.ndarray) -> np.ndarray:
     scale_width = width_refs / width_path 
     scale_height = height_refs / height_path
     # Scale and shift path to be in first quadrant
-    path[:, 0] -= path[:, 0].min() - scale_width*0.2
-    path[:, 1] -= path[:, 1].min() - scale_height*0.2
-    path[:, 0] *= scale_width*0.8
-    path[:, 1] *= scale_height*0.8
+    path[:, 0] *= scale_width*0.5
+    path[:, 1] *= scale_height*0.5
+    path[:, 0] -= path[:, 0].min() - width_refs*0.25
+    path[:, 1] -= path[:, 1].min() - height_refs*0.25
 
     # Transform path to new coordinates
     mat_trans = np.array([
