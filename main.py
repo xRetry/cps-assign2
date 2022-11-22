@@ -9,23 +9,33 @@ from path_creation import path_line, path_spiral
 from coordinate_affine_transform import transform_coordinates
 
 
-path = path_line(200)
-path = path_spiral(300)
-
-refs = np.array([
-    [5, 5],
-    [0, 0],
-    [-5, 5],
+REFS = np.array([
+    [5, 5], # lower right
+    [0, 0], # lower left
+    [-5, 5], # upper left
 ])
 
-path_trans = transform_coordinates(refs, path)
 
-arm = TwoLinkArm()
+def run_measuring():
+    arm = TwoLinkArm()
+    arm.measure_coordinates()
 
-arm.measure_coordinates()
 
-arm.follow_path(path_trans, "jacobian")
-arm.follow_path(path_trans, "inverse")
-#arm.to_coordinate(np.array([0, 0]), "inverse")
-#arm.to_coordinate(np.array([0, 0]), "jacobian")
+def run_path_line():
+    arm = TwoLinkArm()
+    path = path_line(5)
+    path_trans = transform_coordinates(REFS, path)
 
+    arm.follow_path(path_trans, "inverse")
+
+def run_path_spiral():
+    arm = TwoLinkArm()
+    path = path_spiral(200)
+    path_trans = transform_coordinates(REFS, path)
+
+    arm.follow_path(path_trans, "inverse")
+
+
+run_measuring()
+#run_path_line()
+#run_path_spiral()
