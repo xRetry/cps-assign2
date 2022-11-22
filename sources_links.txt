@@ -1,0 +1,7 @@
+https://www.mdpi.com/2075-1702/10/3/193/htm  --> numerical derivation error (bit over the top, but clean)
+
+https://github.com/karundawadi/roboticArm --> somewhat similar task to what we have to perform (code-basis, may be useful during debug session)
+
+https://github.com/lam1910/ev3-robot --> quite nice, advanced code structure (controller-based interactions)
+
+https://www.researchgate.net/publication/273335818_Absolute_accuracy_analysis_and_improvement_of_a_hybrid_6-DOF_medical_robot/link/55155cb60cf2f7d80a32da8e/download --> Error Metric Analysis 6-DOF robot
