@@ -46,20 +46,31 @@ class TwoLinkArm:
     error: float
     num_error: int
     x_cur_ALL: list
+    smp_rate_measure: float
+    smp_rate_target: float
+    jac_num_iter: int
+    error_variant: int
 
 
-    def __init__(self):
+    def __init__(self, lengths=np.array([0.75, 1]), motor_speed=100, ports=[Port.A, Port.B], 
+    dist_threshold=0.1, smp_rate_measure=50, jac_num_iter=50, jac_step_size=0.01, error_variant=1,
+    smp_rate_target=10):
         self.ev3 = EV3Brick()
-        self.l = np.array([0.75, 1]) 
-        self.motor_speed = 100
+        self.l = lengths
+        self.motor_speed = motor_speed
         self.motors = [
-            Motor(Port.A),
-            Motor(Port.B)
+            Motor(ports[0]),
+            Motor(ports[1])
         ]
-        self.dist_threshold = 0.1  
+        self.dist_threshold = dist_threshold
         self.x_des_old = kin_forward(self.l, self._get_angles())[:, 2]
         self.error, self.num_error = 0., 0
         self.x_cur_ALL = []
+        self.smp_rate_measure = smp_rate_measure
+        self.smp_rate_target = smp_rate_target
+        self.jac_num_iter = jac_num_iter
+        self.jac_step_size = jac_step_size
+        self.error_variant = error_variant
 
 
     def measure_coordinates(self):
@@ -74,7 +85,7 @@ class TwoLinkArm:
                 self.ev3.screen.print("q2: ", math.degrees(q[1]))
                 self.ev3.screen.print("x: ", xy[0])
                 self.ev3.screen.print("y: ", xy[1])
-            wait(50)
+            wait(self.smp_rate_measure)
 
 
     def follow_path(self, path: np.ndarray, method: str):
@@ -91,7 +102,7 @@ class TwoLinkArm:
         if method == "inverse":
             q = self._to_coordinate_analytic(x_des)
         elif method == "jacobian":
-            q = self._to_coordinate_jacobian(x_des, 50)
+            q = self._to_coordinate_jacobian(x_des, self.jac_num_iter)
         else: 
             raise KeyError("Invalid method specification! Use 'inverse' or 'jacobian'")
 
@@ -112,14 +123,13 @@ class TwoLinkArm:
 
 
     def _to_coordinate_jacobian(self, x_des, num_iter):
-        step_size = 0.01
         l = self.l
         for i in range(num_iter):
             q = self._get_angles()
             x_cur = kin_forward(l, q)[:, 2]
-            inv_jacobian = np.linalg.pinv(kin_jacobian(l, q)) # TODO: pinv maybe not available in ulab
+            inv_jacobian = np.linalg.inv(kin_jacobian(l, q)) 
             delta_q = inv_jacobian @ (x_des - x_cur)[:, None]
-            q += step_size * delta_q[:, 0]
+            q += self.jac_step_size * delta_q[:, 0]
 
             # Forcing second joint angle to be positive for stability
             if q[1] <= 0: 
@@ -144,14 +154,13 @@ class TwoLinkArm:
 
 
     def _wait_till_target(self, x_des):
-        time_sample = 10 # ms
         x_cur = kin_forward(self.l, self._get_angles())[:, 2]
         while np.linalg.norm(x_cur - x_des) > self.dist_threshold:
             '''
             [ ERROR DERIVATION ] [ VARIANT 1]
             '''
 
-            error = self._get_error(self.x_des_old, x_des, x_cur, 1)
+            error = self._get_error(self.x_des_old, x_des, x_cur, self.error_variant)
             self.num_error += 1
             self.error = self.error * (self.num_error-1) / self.num_error + error / self.num_error            
 
@@ -162,7 +171,7 @@ class TwoLinkArm:
             ## [ CONTINUATION : ] run once at end of script
 
 
-            wait(time_sample) 
+            wait(self.smp_rate_target) 
             x_cur = kin_forward(self.l, self._get_angles())[:, 2]
 
 
@@ -205,8 +214,6 @@ class TwoLinkArm:
             error_RMSE = np.root(error_MSE)
             
             ## --> print values then or write to file. @ Marco -- did you find a filewriter ? or should we use the logger from ev3 for that purpose ?
-
-
         return error
             
 
