@@ -17,11 +17,11 @@ REFS = np.array([
 ])
 
 params = dict(
-    lengths=np.array([1, 1.]),
+    lengths=np.array([ 13.7*10^-2, 9*10^-2]),
     motor_speed=100,
     ports=[Port.A, Port.B],
     dist_threshold=0.1,
-    smp_rate_measure=50,
+    smp_rate_measure=50, #ms
     smp_rate_target=10,
     jac_num_iter=50,
     jac_step_size=0.01,
