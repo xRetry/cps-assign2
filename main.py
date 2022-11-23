@@ -1,8 +1,4 @@
 #!/usr/bin/env pybricks-micropython
-try:
-    from ulab import numpy as np
-except ModuleNotFoundError:
-    import numpy as np
 
 from two_link_arm import TwoLinkArm
 from pybricks.parameters import Port
@@ -10,14 +6,14 @@ from path_creation import path_line, path_spiral
 from coordinate_affine_transform import transform_coordinates
 
 
-REFS = np.array([
+REFS = [
     [5, 5], # lower right
     [0, 0], # lower left
     [-5, 5], # upper left
-])
+]
 
 params = dict(
-    lengths=np.array([ 13.7*10^-2, 9*10^-2]),
+    lengths=[ 13.7*10^-2, 9*10^-2],
     motor_speed=100,
     ports=[Port.A, Port.B],
     dist_threshold=0.1,
