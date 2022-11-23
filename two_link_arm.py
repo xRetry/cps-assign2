@@ -125,7 +125,8 @@ class TwoLinkArm:
        
 
         self._set_angles(q)
-        self._wait_till_target(x_des)
+        wait(1000)
+        # self._wait_till_target(x_des)
         self.x_des_old = x_des
 
 
@@ -159,6 +160,7 @@ class TwoLinkArm:
                 target_angle=math.degrees(rad[i]),
                 wait=False # Otherwise this would pause the program
             )
+
 
 
     def _get_angles(self):
