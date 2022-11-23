@@ -4,6 +4,7 @@ from pybricks.hubs import EV3Brick
 from pybricks.ev3devices import Motor
 from pybricks.parameters import Port
 from pybricks.tools import wait, StopWatch, DataLog
+from array import array
 
 
 def kin_forward(l, q):
@@ -28,6 +29,7 @@ def vecnorm(v1:list, v2:list):
 
 
 class TwoLinkArm:
+    """
     l: list
     ev3: EV3Brick
     motors: list
@@ -42,6 +44,8 @@ class TwoLinkArm:
     jac_num_iter: int
     error_variant: int
 
+    """
+    
 
     def __init__(self, lengths=[0.75, 1], motor_speed=100, ports=[Port.A, Port.B], 
     dist_threshold=0.1, smp_rate_measure=50, jac_num_iter=50, jac_step_size=0.01, error_variant=1,
@@ -82,7 +86,9 @@ class TwoLinkArm:
     def follow_path(self, path: list, method: str):
         watch = StopWatch()
         for x_des in path:
+            print("position init", x_des)
             self.to_coordinate(x_des, method)
+            print("position done", x_des)
         duration = watch.time()
 
         log = DataLog("error", "duration")
@@ -101,12 +107,22 @@ class TwoLinkArm:
     def _to_coordinate_analytic(self, x_des):
         l = self.l
         q = [0,0]
-        q[1] = math.acos((sum(x_des**2)- sum(l**2)) / (2*l[0]*l[1]))
+        sum_temp = (sum([x**2 for x in x_des])- sum([x**2 for x in l]) / (2*l[0]*l[1]))
+        if(sum_temp >=1 ):
+            sum_temp = 1
+        if(sum_temp <=-1):
+            sum_temp = -1
+        q[1] = math.acos(sum_temp)
+        
         q[0] = math.atan(x_des[1]/x_des[0]) - math.atan((l[1]*math.sin(q[1])) / (l[0]+l[1]*math.cos(q[1])))
+
+        print(q, x_des)
 
         # Correcting angle for 2nd and 3rd quadrant
         if x_des[0] < 0:
             q[0] -= math.pi
+
+       
 
         self._set_angles(q)
         self._wait_till_target(x_des)
@@ -132,6 +148,11 @@ class TwoLinkArm:
 
 
     def _set_angles(self, rad):
+        rad[0] = (rad[0] % (2*math.pi))
+        rad[1] = -(rad[1] % (2*math.pi))
+
+        print(rad)
+
         for i in range(2):
             self.motors[i].run_target(
                 speed=self.motor_speed, 
@@ -141,12 +162,18 @@ class TwoLinkArm:
 
 
     def _get_angles(self):
-        return [math.radians(motor.angle()) for motor in self.motors]
+        q= [math.radians(motor.angle()) for motor in self.motors]
+        q[1] = -q[1]
+
+        return q
 
 
     def _wait_till_target(self, x_des):
         x_cur = kin_forward(self.l, self._get_angles())
+        
         while vecnorm(x_cur, x_des) > self.dist_threshold:
+            print("in vecnorm loop", x_cur, x_des)
+
             '''
             [ ERROR DERIVATION ] [ VARIANT 1]
             '''
