@@ -38,29 +38,29 @@ def run_path_line():
     #path_trans = transform_coordinates(REFS, path)
     arm.motors[0].reset_angle(0)
     arm.motors[1].reset_angle(0)
-    arm.follow_path(path_trans, "inverse")
+    arm.follow_path(path_trans)
 
 def run_path_spiral():
     arm = TwoLinkArm(**params)
     arm.motors[0].reset_angle(0)
     arm.motors[1].reset_angle(0)
 
-    path = path_spiral()    
+    path = get_spiral()    
     #path_trans = transform_coordinates(REFS, path)
 
-    arm.follow_path(path, "inverse")
+    arm.follow_path(path)
 
 def run_path_straightLine():
     arm = TwoLinkArm(**params)
     arm.motors[0].reset_angle(0)
     arm.motors[1].reset_angle(0)
 
-    path = get_StraigthLine()
+    path = get_line()
 
-    arm.follow_path(path, "inverse")
+    arm.follow_path(path)
 
 
-def get_StraigthLine():
+def get_line():
     return [[1.0, 1.0],
             [0.9797979797979798, 1.0],
             [0.9595959595959596, 1.0],
@@ -162,7 +162,7 @@ def get_StraigthLine():
             [-0.9797979797979799, 1.0],
             [-1.0, 1.0]]
 
-def path_spiral():
+def get_spiral():
     return [
         [0.375, 0.7503047935520467],
         [0.3897255602515596, 0.8546063380122242],
