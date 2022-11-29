@@ -16,7 +16,7 @@ def path_line(x0, x1, num_points):
     return vals_t
 
 
-def path_spiral(num_points: int):
+def path_spiral(num_points, x_init, scale=1):
     phi = (1 + 5**0.5)/2
     y0 = 1/(2+phi)
     x0 = (2*phi + 1)*y0
@@ -28,7 +28,9 @@ def path_spiral(num_points: int):
     y = lambda t: y0 + a*math.exp(k*t)*math.sin(t)
 
     linspace = lambda x_min, x_max, num_points: [x_min+i*(x_max - x_min)/(num_points-1) for i in range(num_points)]
-    ts = linspace(theta0, -20, num_points)
-    xys = [[x(t), y(t)] for t in ts]
+    ts = linspace(theta0+0.1, -20, num_points)
+    xs = [-x(t) for t in ts]
+    x_delta = max(xs) - min(xs)
+    xys = [[xs[i]/x_delta*x_init*scale, y(t)*x_init*scale] for i, t in enumerate(ts)]
 
     return xys
