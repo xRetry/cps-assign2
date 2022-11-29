@@ -19,6 +19,7 @@ params = dict(
     dist_threshold=0.1,
     smp_rate_measure=50, #ms
     smp_rate_target=10,
+    calibrate=True
 )
 
 

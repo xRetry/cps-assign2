@@ -6,11 +6,14 @@ from pybricks.parameters import Port
 from pybricks.tools import wait, StopWatch, DataLog
 
 
-def kin_forward(l, q):
+def kin_forward(l, q, scale):
     '''
     Uses the forward kinematics of a two-link arm to return the joint positions given two angles. 
     '''
-    return [ l[0] * math.cos(q[0]) + l[1] * math.cos(sum(q)), l[0] * math.sin(q[0]) + l[1] * math.sin(sum(q))]
+    return [ 
+        l[0] * math.cos(q[0]) + l[1] * math.cos(sum(q)) * scale, 
+        l[0] * math.sin(q[0]) + l[1] * math.sin(sum(q)) * scale
+    ]
           
 
 def vecnorm(v1:list, v2:list):
@@ -20,7 +23,7 @@ def vecnorm(v1:list, v2:list):
 class TwoLinkArm:
     
     def __init__(self, lengths=[0.75, 1], motor_speed=100, ports=[Port.A, Port.B], 
-    dist_threshold=0.1, smp_rate_measure=50, smp_rate_target=10):
+    dist_threshold=0.1, smp_rate_measure=50, smp_rate_target=10, calibrate=False):
         self.ev3 = EV3Brick()
         self.l = lengths
         self.motor_speed = motor_speed
@@ -29,10 +32,13 @@ class TwoLinkArm:
             Motor(ports[1])
         ]
         self.dist_threshold = dist_threshold
-        self.x_des_old = kin_forward(self.l, self._get_angles())
+        self.x_des_old = kin_forward(self.l, self._get_angles(), 1)
         self.error, self.num_error = 0., 0
         self.smp_rate_measure = smp_rate_measure
         self.smp_rate_target = smp_rate_target
+
+        if calibrate:
+            self.coord_scale = sum(self.l) / self.x_des_old[0]
 
 
     def measure_coordinates(self):
@@ -40,7 +46,7 @@ class TwoLinkArm:
             # Should print the coodinates and angles if any button is pressed
             if len(self.ev3.buttons.pressed()) > 0:
                 q = self._get_angles()
-                xy = kin_forward(self.l, q)
+                xy = kin_forward(self.l, q, self.coord_scale)
 
                 self.ev3.screen.clear()
                 self.ev3.screen.print("q1: ", math.degrees(q[0]))
@@ -65,7 +71,7 @@ class TwoLinkArm:
     def to_coordinate(self, x_des):
         l = self.l
         q = [0., 0.]
-        sum_temp = (sum([x**2 for x in x_des])- sum([x**2 for x in l]) / (2*l[0]*l[1]))
+        sum_temp = (sum([x**2 for x in x_des])- sum([x**2 for x in l])) / (2*l[0]*l[1])
         if(sum_temp >=1 ):
             sum_temp = 1
         if(sum_temp <=-1):
@@ -73,8 +79,6 @@ class TwoLinkArm:
         q[1] = math.acos(sum_temp)
         
         q[0] = math.atan(x_des[1]/x_des[0]) - math.atan((l[1]*math.sin(q[1])) / (l[0]+l[1]*math.cos(q[1])))
-
-        print(q, x_des)
 
         # Correcting angle for 2nd and 3rd quadrant
         if x_des[0] < 0:
@@ -89,8 +93,6 @@ class TwoLinkArm:
     def _set_angles(self, rad):
         rad[0] = (rad[0] % (2*math.pi))
         rad[1] = -(rad[1] % (2*math.pi))
-
-        print(rad)
 
         for i in range(2):
             self.motors[i].run_target(
@@ -108,7 +110,7 @@ class TwoLinkArm:
 
 
     def _wait_till_target(self, x_des):
-        x_cur = kin_forward(self.l, self._get_angles())
+        x_cur = kin_forward(self.l, self._get_angles(), self.coord_scale)
         
         while vecnorm(x_cur, x_des) > self.dist_threshold:
             print("in vecnorm loop", x_cur, x_des)
@@ -122,7 +124,7 @@ class TwoLinkArm:
             self.error = self.error * (self.num_error-1) / self.num_error + error / self.num_error            
 
             wait(self.smp_rate_target) 
-            x_cur = kin_forward(self.l, self._get_angles())
+            x_cur = kin_forward(self.l, self._get_angles(), self.coord_scale)
 
     
     def _get_error(self, x_old: list, x_des: list, x_cur: list) -> float:
