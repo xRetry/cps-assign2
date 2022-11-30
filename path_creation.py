@@ -28,9 +28,12 @@ def path_spiral(num_points, x_init, scale=1):
     y = lambda t: y0 + a*math.exp(k*t)*math.sin(t)
 
     linspace = lambda x_min, x_max, num_points: [x_min+i*(x_max - x_min)/(num_points-1) for i in range(num_points)]
-    ts = linspace(theta0+0.1, -20, num_points)
+    ts = linspace(theta0+0.0, -20, num_points)
     xs = [-x(t) for t in ts]
     x_delta = max(xs) - min(xs)
-    xys = [[xs[i]/x_delta*x_init*scale, y(t)*x_init*scale] for i, t in enumerate(ts)]
+    xys = [[xs[i]/x_delta*x_init*scale+x_init, y(t)*x_init*scale] for i, t in enumerate(ts)]
+
+    print("x_init ", x_init)
+    print("Max X", xys[0][0], " Middlepoint ", xys[-1][0])
 
     return xys

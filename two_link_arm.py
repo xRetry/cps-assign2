@@ -39,6 +39,9 @@ class TwoLinkArm:
 
         if calibrate:
             self.coord_scale = sum(self.l) / self.x_des_old[0]
+            print("Sum L", sum(self.l))
+            print("X_des old ", self.x_des_old[0])
+            print("Calibrate Coord Scale: ", self.coord_scale)
 
 
     def measure_coordinates(self):
@@ -58,10 +61,9 @@ class TwoLinkArm:
 
     def follow_path(self, path: list):
         watch = StopWatch()
-        for x_des in path:
-            print("position init", x_des)
+        for x_des in path:            
             self.to_coordinate(x_des)
-            print("position done", x_des)
+            
         duration = watch.time()
 
         log = DataLog("error", "duration")
@@ -69,21 +71,28 @@ class TwoLinkArm:
 
     
     def to_coordinate(self, x_des):
+
         l = self.l
+        x_des = [x / self.coord_scale for x in x_des]
         q = [0., 0.]
         sum_temp = (sum([x**2 for x in x_des])- sum([x**2 for x in l])) / (2*l[0]*l[1])
+
+        print("position", x_des)
+        
+
         if(sum_temp >=1 ):
             sum_temp = 1
         if(sum_temp <=-1):
             sum_temp = -1
-        q[1] = math.acos(sum_temp)
+        q[1] = -math.acos(sum_temp)
         
         q[0] = math.atan(x_des[1]/x_des[0]) - math.atan((l[1]*math.sin(q[1])) / (l[0]+l[1]*math.cos(q[1])))
 
         # Correcting angle for 2nd and 3rd quadrant
         if x_des[0] < 0:
-            q[0] -= math.pi
+            q[0] += math.pi
 
+        print(" [1 ] Q Outprint: ",math.degrees(q[1]))
         self._set_angles(q)
         wait(1000)
         # self._wait_till_target(x_des)
@@ -91,15 +100,28 @@ class TwoLinkArm:
 
 
     def _set_angles(self, rad):
-        rad[0] = (rad[0] % (2*math.pi))
-        rad[1] = -(rad[1] % (2*math.pi))
+        #rad[0] = (rad[0] % (2*math.pi))
+        #rad[1] = (rad[1] % (2*math.pi))
+        rad[1] = -rad[1]
+        print(" [ 2 ] Q1 Outprint: ",math.degrees(rad[0]))
+        print(" [ 2 ] Q2 Outprint: ",math.degrees(rad[1]))
 
         for i in range(2):
             self.motors[i].run_target(
                 speed=self.motor_speed, 
                 target_angle=math.degrees(rad[i]),
-                wait=False # Otherwise this would pause the program
-            )
+                wait=False) # Otherwise this would pause the program
+           
+            """
+            self.motors[i].track_target(
+                math.degrees(rad[i]))
+             
+            
+            """
+
+            
+                
+            
 
 
     def _get_angles(self):

@@ -14,9 +14,9 @@ REFS = [
 
 params = dict(
     lengths=[ 13.7*10**-1, 9*10**-1],
-    motor_speed=200,
+    motor_speed=100,
     ports=[Port.A, Port.B],
-    dist_threshold=0.1,
+    dist_threshold=0.2,
     smp_rate_measure=50, #ms
     smp_rate_target=10,
     calibrate=True
@@ -43,8 +43,8 @@ def run_path_spiral():
     arm.motors[0].reset_angle(0)
     arm.motors[1].reset_angle(0)
 
-    #path = get_spiral()    
-    path = path_spiral(100, sum(params["lengths"]), 0.5)
+    # path = get_spiral()    
+    path = path_spiral(500, sum(params["lengths"]) * 0 + 2.27 , 0.5)
 
     arm.follow_path(path)
 
@@ -256,6 +256,6 @@ def get_spiral():
         ]
 
 # run_measuring()
-run_path_line()
-# run_path_spiral()
+# run_path_line()
+run_path_spiral()
 
